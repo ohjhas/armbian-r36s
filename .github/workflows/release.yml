@@ -55,9 +55,9 @@ jobs:
 
       - name: Prep
         run: |
-	export LatestArmbianVer=$(gh release list -R armbian/build | grep -v -E "trunk|digest" | head -n1 | cut -f1)
-	export LatestArmbianURL=https://github.com/armbian/build/archive/refs/tags/${LatestArmbianVer}.tar.gz
-	echo LatestArmbianURL=$LatestArmbianURL
+        export LatestArmbianVer=$(gh release list -R armbian/build | grep -v -E "trunk|digest" | head -n1 | cut -f1)
+        export LatestArmbianURL=https://github.com/armbian/build/archive/refs/tags/${LatestArmbianVer}.tar.gz
+        echo LatestArmbianURL=$LatestArmbianURL
           wget -q -nv "$LatestArmbianURL" -O${LatestArmbianVer}.tar.gz
           tar --strip-components=1 -xf ${LatestArmbianVer}.tar.gz
           rm -f ${LatestArmbianVer}.tar.gz
