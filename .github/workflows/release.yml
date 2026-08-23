@@ -24,7 +24,7 @@ jobs:
       matrix:
         #version: [r36s-bookworm-minimal, r36s-jammy-minimal, r36s-noble-minimal, r36s-plucky-minimal, r36s-bookworm-xfce, r36s-jammy-xfce, r36s-noble-xfce, r36s-plucky-xfce]
         device: [r36s]
-        os: [trixie, noble, resolute, bookworm, jammy]
+        os: [resolute]
         type: [xfce, minimal]
       fail-fast: false
     runs-on: ubuntu-latest
