@@ -42,7 +42,7 @@ jobs:
           docker-images: true
       #     swap-storage: true
 
-      - uses: thejerrybao/setup-swap-space@v1
+      - uses: pierotofy/set-swap-space@master
         with:
           swap-space-path: /swapfile
           swap-size-gb:  8
