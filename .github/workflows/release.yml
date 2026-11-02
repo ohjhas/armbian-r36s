@@ -1,10 +1,11 @@
-# This is a basic workflow to help you get started with Actions
-
 name: release Armbian
 on:
   workflow_dispatch:
 env:
-    GH_TOKEN: ${{ github.token }}
+  GH_TOKEN: ${{ github.token }}
+
+permissions:
+  contents: write
 
 jobs:
   get_build_date:
@@ -15,14 +16,14 @@ jobs:
     steps:
       - name: Set build date
         id: set_date
-        run:  |
-          echo "datedash=$(date +%Y-%m-%d-%H%M%S)" >> $GITHUB_OUTPUT 
-          echo "date=$(echo $datedash | sed 's|\-||g')" >> $GITHUB_OUTPUT 
+        run: |
+          datedash=$(date +%Y-%m-%d-%H%M%S)
+          echo "datedash=${datedash}" >> "$GITHUB_OUTPUT"
+          echo "date=${datedash//-/}" >> "$GITHUB_OUTPUT"
 
   build:
     strategy:
       matrix:
-        #version: [r36s-bookworm-minimal, r36s-jammy-minimal, r36s-noble-minimal, r36s-plucky-minimal, r36s-bookworm-xfce, r36s-jammy-xfce, r36s-noble-xfce, r36s-plucky-xfce]
         device: [r36s]
         os: [trixie]
         type: [xfce]
@@ -40,36 +41,49 @@ jobs:
           haskell: true
           large-packages: true
           docker-images: true
-      #     swap-storage: true
 
       - uses: pierotofy/set-swap-space@master
         with:
           swap-space-path: /swapfile
-          swap-size-gb:  8
+          swap-size-gb: 8
           remove-existing-swap-files: false
-          
+
       - uses: actions/checkout@v4
-      -
-        name: Set up QEMU
+
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Prep
         run: |
-         export LatestArmbianVer=$(gh release list -R armbian/build | grep -v -E "trunk|digest" | head -n1 | cut -f1)
-         export LatestArmbianURL=https://github.com/armbian/build/archive/refs/tags/${LatestArmbianVer}.tar.gz
-         echo LatestArmbianURL=$LatestArmbianURL
-          wget -q -nv "$LatestArmbianURL" -O${LatestArmbianVer}.tar.gz
-          tar --strip-components=1 -xf ${LatestArmbianVer}.tar.gz
-          rm -f ${LatestArmbianVer}.tar.gz
-          mkdir release
+          set -euo pipefail
+
+          # Ask gh for tag names only (no table parsing), skipping pre-releases/drafts
+          LatestArmbianVer=$(gh release list -R armbian/build \
+            --exclude-pre-releases --exclude-drafts --limit 30 \
+            --json tagName -q '.[].tagName' \
+            | grep -v -E "trunk|digest" | head -n1)
+
+          if [ -z "$LatestArmbianVer" ]; then
+            echo "::error::Could not determine latest Armbian release tag"
+            exit 1
+          fi
+
+          LatestArmbianURL="https://github.com/armbian/build/archive/refs/tags/${LatestArmbianVer}.tar.gz"
+          echo "Using Armbian ${LatestArmbianVer}"
+          echo "LatestArmbianURL=${LatestArmbianURL}"
+
+          wget -q -nv "$LatestArmbianURL" -O "${LatestArmbianVer}.tar.gz"
+          tar --strip-components=1 -xf "${LatestArmbianVer}.tar.gz"
+          rm -f "${LatestArmbianVer}.tar.gz"
+          mkdir -p release
 
       - name: Build armbian-${{ matrix.device }}-${{ matrix.os }}-${{ matrix.type }}.img
         run: |
           image=${{ matrix.device }}-${{ matrix.os }}-${{ matrix.type }}
           sleep $(( RANDOM % 300 ))
-          ./compile.sh ${image} || exit 1
-          find output -name "*.img" -exec cp -vf {} release/armbian-${image}.img \;
-          
+          ./compile.sh "${image}" || exit 1
+          find output -name "*.img" -exec cp -vf {} "release/armbian-${image}.img" \;
+
       - name: Compress armbian-${{ matrix.device }}-${{ matrix.os }}-${{ matrix.type }}.img
         run: |
           find release -name "*.img" -exec xz -vz -T0 -6 --extreme {} \;
