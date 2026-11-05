@@ -32,12 +32,21 @@ IFS="$OIFS"
 
 prep() {
     echo prep
-    export LatestArmbianVer=$(gh release list -R armbian/build |grep -v trunk | head -n1 |cut -f1)
+    # Ask gh for tag names only (no table parsing), skipping pre-releases/drafts
+    export LatestArmbianVer=$(gh release list -R armbian/build \
+        --exclude-pre-releases --exclude-drafts --limit 30 \
+        --json tagName -q '.[].tagName' \
+        | grep -v -E "trunk|digest" | head -n1)
+    if [[ -z "$LatestArmbianVer" ]]
+    then
+        echo "Could not determine latest Armbian release tag"
+        exit 1
+    fi
     export LatestArmbianURL=https://github.com/armbian/build/archive/refs/tags/${LatestArmbianVer}.tar.gz
     echo LatestArmbianURL=$LatestArmbianURL
-    wget -q -nv "$LatestArmbianURL" -O${LatestArmbianVer}.tar.gz
-    tar --strip-components=1 --exclude=.gitignore --exclude=.git --exclude=README.md -xf ${LatestArmbianVer}.tar.gz
-    rm -f ${LatestArmbianVer}.tar.gz
+    wget -q -nv "$LatestArmbianURL" -O "${LatestArmbianVer}.tar.gz" || exit 1
+    tar --strip-components=1 --exclude=.gitignore --exclude=.git --exclude=README.md -xf "${LatestArmbianVer}.tar.gz" || exit 1
+    rm -f "${LatestArmbianVer}.tar.gz"
     #mkdir release
     [[ "$1" == "prep" ]] && exit 
 }
