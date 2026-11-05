@@ -1,8 +1,5 @@
-# trixier36s-armbian
-This is armbian, and its for the r36s. The repo has been modified to make trixie (13) builds.
-
-# Release?
-check it out
+# armbian-r36s
+This is armbian, and its for the r36s.
 
 # Credits
-@EatPrilosec , without him this wouldnt exist, all thanks to him.
+@EatPrilosec original maintainer, without them this wouldn't be possible
